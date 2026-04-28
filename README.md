@@ -20,7 +20,21 @@ This project is about an application to improve the process of create reports re
 ## The Problem to Solve
 
 ## Architectural Features
-
+```
+reports-IT-support-project/
+├── src/
+│ ├── config/ # Application configuration
+│ ├── data/ # Data layer (handled by Gemini Knowledge API)
+│ ├── services/ # AI and processing services
+│ │ ├── gemini_service.py # Interface with Gemini AI
+│ │ └── knowledge_api.py # Interface with Knowledge Base API
+│ ├── ui/ # User Interface (Flet)
+│ │ ├── app.py # Main app component
+│ │ └── components/ # Reusable components
+│ └── main.py # Application entry point
+├── tests/ # Unit tests
+└── requirements.txt # Project dependencies
+```
 ## System Architecture
 
 ### Layers
@@ -41,11 +55,17 @@ Follow these steps to run the development environment locally.
     git clone https://github.com/Arieloou/reports-IT-support-project.git
     cd SPSM
     ```
-2.  Run the startup script. This command will build the Docker images and start all the containers for the microservices, databases, and required infrastructure.
-
+2.  Create and activate a virtual environment:
     ```bash
-    bash start.sh
+    python -m venv .venv
+    .venv\Scripts\activate  # Windows
+    # source .venv/bin/activate  # Linux/Mac
     ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
 Once the script finishes, the entire platform will be running and ready to use.
 
 ## Authors
