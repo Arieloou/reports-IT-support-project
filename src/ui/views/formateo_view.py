@@ -1,6 +1,6 @@
 import flet as ft
 from src.core.utils import clean_up_text
-from src.domain.models import DatosActa
+from src.domain.models import TransactionRecord
 from src.application.acta_service import ActaService
 from src.ui.components.common import make_date_row, do_search, show_popup_message
 
@@ -28,26 +28,35 @@ def build_formateo_form(page: ft.Page, service: ActaService) -> ft.Column:
     fila_nombre = ft.Row([nombre, search_btn])
 
     def generar_todo(e):
-        nombre_val = clean_up_text(nombre.value)
-        fecha_val = clean_up_text(fecha.value)
+        from src.domain.models import Person, Device, TicketRecord
+        device = Device(
+            device_type=clean_up_text(equipo.value),
+            brand=clean_up_text(marca.value),
+            model=clean_up_text(modelo.value),
+            udla_code=clean_up_text(codigo.value)
+        )
+        person = Person(name=clean_up_text(nombre.value), ci_document=clean_up_text(cedula.value))
+        ticket_obj = TicketRecord(ticket=clean_up_text(ticket.value), observations=clean_up_text(observaciones.value))
+        date_str = clean_up_text(fecha.value)
 
-        data_entrega = DatosActa(
-            nombre=nombre_val, cedula=clean_up_text(cedula.value),
-            fecha=fecha_val,
-            equipo=clean_up_text(equipo.value), marca=clean_up_text(marca.value),
-            modelo=clean_up_text(modelo.value), codigo=clean_up_text(codigo.value),
-            ticket=clean_up_text(ticket.value), observaciones=clean_up_text(observaciones.value)
+        data_entrega = TransactionRecord(
+            person=person,
+            devices=[device],
+            ticket=ticket_obj,
+            date=date_str
         )
-        data_respaldo = DatosActa(
-            nombre=nombre_val, fecha=fecha_val,
-            motivo=clean_up_text(motivo.value) if motivo.value else "realizar un cambio y/o formateo del equipo"
+        data_respaldo = TransactionRecord(
+            person=person,
+            devices=[],
+            ticket=TicketRecord(),
+            date=date_str,
+            reason=clean_up_text(motivo.value) if motivo.value else "realizar un cambio y/o formateo del equipo"
         )
-        data_devolucion = DatosActa(
-            nombre=nombre_val, cedula=clean_up_text(cedula.value),
-            fecha=fecha_val,
-            equipo=clean_up_text(equipo.value), marca=clean_up_text(marca.value),
-            modelo=clean_up_text(modelo.value), codigo=clean_up_text(codigo.value),
-            ticket=clean_up_text(ticket.value)
+        data_devolucion = TransactionRecord(
+            person=person,
+            devices=[device],
+            ticket=ticket_obj,
+            date=date_str
         )
 
         success, msg = service.generate_formateo_suite(data_entrega, data_respaldo, data_devolucion)

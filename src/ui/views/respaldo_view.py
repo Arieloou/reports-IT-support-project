@@ -1,6 +1,6 @@
 import flet as ft
 from src.core.utils import clean_up_text
-from src.domain.models import DatosActa
+from src.domain.models import TransactionRecord
 from src.application.acta_service import ActaService
 from src.ui.components.common import make_date_row, do_search, show_popup_message
 
@@ -22,11 +22,13 @@ def build_respaldo_form(page: ft.Page, service: ActaService) -> ft.Column:
     fila_nombre = ft.Row([nombre, search_btn])
 
     def generar(e):
-        data = DatosActa(
-            nombre=clean_up_text(nombre.value),
-            cedula=clean_up_text(cedula.value),
-            fecha=clean_up_text(fecha.value),
-            motivo=clean_up_text(motivo.value) if motivo.value else "realizar un cambio y/o formateo del equipo"
+        from src.domain.models import Person, TicketRecord
+        data = TransactionRecord(
+            person=Person(name=clean_up_text(nombre.value), ci_document=clean_up_text(cedula.value)),
+            devices=[],
+            ticket=TicketRecord(),
+            date=clean_up_text(fecha.value),
+            reason=clean_up_text(motivo.value) if motivo.value else "realizar un cambio y/o formateo del equipo"
         )
         
         success, msg = service.generate_respaldo(data)

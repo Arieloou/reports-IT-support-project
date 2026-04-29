@@ -1,7 +1,7 @@
 import flet as ft
 from datetime import datetime, timezone
 from typing import Callable, List
-from src.domain.models import Persona
+from src.domain.models import Person
 from src.application.acta_service import ActaService
 
 def show_popup_message(page: ft.Page, texto: str):
@@ -54,7 +54,7 @@ def make_date_row(page: ft.Page) -> tuple[ft.TextField, ft.Row, ft.Container]:
     row = ft.Row([fecha, btn])
     return fecha, row, cal_box
 
-def show_individual_options_list(page: ft.Page, matches: List[Persona], nombre_field: ft.TextField, cedula_field: ft.TextField):
+def show_individual_options_list(page: ft.Page, matches: List[Person], nombre_field: ft.TextField, cedula_field: ft.TextField):
     """Muestra coincidencias para que el usuario elija."""
     def seleccionar(e, cedula_sel: str, nombre_sel: str):
         cedula_field.value = cedula_sel
@@ -66,8 +66,8 @@ def show_individual_options_list(page: ft.Page, matches: List[Persona], nombre_f
     for match in matches:
         opciones.append(
             ft.TextButton(
-                content=ft.Text(f"{match.nombre}  —  {match.cedula}"),
-                on_click=lambda e, c=match.cedula, n=match.nombre: seleccionar(e, c, n),
+                content=ft.Text(f"{match.name}  —  {match.ci_document}"),
+                on_click=lambda e, c=match.ci_document, n=match.name: seleccionar(e, c, n),
             )
         )
 
@@ -76,7 +76,7 @@ def show_individual_options_list(page: ft.Page, matches: List[Persona], nombre_f
         page.update()
 
     dialogo = ft.AlertDialog(
-        title=ft.Text("Seleccione una persona"),
+        title=ft.Text("Seleccione una Persona"),
         content=ft.Column(opciones, tight=True, scroll=ft.ScrollMode.AUTO),
         actions=[ft.TextButton("Cancelar", on_click=close_list)],
     )

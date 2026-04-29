@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import List
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -9,8 +11,14 @@ class ActaType(Enum):
 
 @dataclass
 class Person:
-    nombre: str
-    cedula: str
+    name: str
+    ci_document: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "ci_document": self.ci_document,
+        }
 
 @dataclass
 class Device:
@@ -20,21 +28,24 @@ class Device:
     udla_code: str = ""
     serial_number: str = ""
 
+# Clase que engloba una transacción
 @dataclass
 class TransactionRecord:
-    device: str = ""
-    brand: str = ""
-    model: str = ""
-    udla_code: str = ""
-    serial_number: str = ""
+    person: Person
+    devices: List[Device]
+    ticket: TicketRecord
+    date: datetime.date
+    reason: str = ""
 
     def to_dict(self) -> dict:
         return {
-            "device": self.device,
-            "brand": self.brand,
-            "model": self.model,
-            "udla_code": self.udla_code,
-            "serial_number": self.serial_number,
+            "name": self.person.name,
+            "ci_document": self.person.ci_document,
+            "devices": self.devices,
+            "ticket": self.ticket.ticket,
+            "observations": self.ticket.observations,
+            "date": self.date.strftime("%d/%m/%Y"),
+            "reason": self.reason,
         }
 
 @dataclass
@@ -46,17 +57,4 @@ class TicketRecord:
         return {
             "ticket": self.ticket,
             "observations": self.observations,
-        }
-
-
-@dataclass
-class NewPersonRecord:
-    nombre: str
-    fecha: str
-    cedula: str = ""
-    
-    def to_dict(self) -> dict:
-        return {
-            "nombre": self.nombre,
-            "cedula": self.cedula,
-        }
+        }    
