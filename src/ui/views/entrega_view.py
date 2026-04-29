@@ -1,6 +1,9 @@
+from src.domain.models import TicketRecord
+from src.domain.models import Device
+from src.domain.models import Person
 import flet as ft
 from src.core.utils import clean_up_text
-from src.domain.models import DatosActa
+from src.domain.models import TransactionRecord
 from src.application.acta_service import ActaService
 from src.ui.components.common import make_date_row, do_search, show_popup_message
 
@@ -9,22 +12,42 @@ def build_entrega_form(page: ft.Page, service: ActaService) -> ft.Column:
     cedula = ft.TextField(label="Cédula")
     fecha, fila_fecha, cal_box = make_date_row(page)
     
-    equipo = ft.TextField(label="Equipo")
-    marca = ft.TextField(label="Marca")
-    modelo = ft.TextField(label="Modelo")
-    codigo = ft.TextField(label="Código")
+    devices_list_col = ft.Column()
+    device_forms = []
 
-    equipo2 = ft.TextField(label="Equipo 2")
-    marca2 = ft.TextField(label="Marca 2")
-    modelo2 = ft.TextField(label="Modelo 2")
-    codigo2 = ft.TextField(label="Código 2")
-    activo2_fields = ft.Column([equipo2, marca2, modelo2, codigo2], visible=False)
+    def create_device_form(index):
+        equipo = ft.TextField(label=f"Equipo {index}")
+        marca = ft.TextField(label=f"Marca {index}")
+        modelo = ft.TextField(label=f"Modelo {index}")
+        codigo = ft.TextField(label=f"Código {index}")
+        serie = ft.TextField(label=f"Número de Serie {index}")
+        
+        return {
+            "equipo": equipo, "marca": marca, "modelo": modelo, "codigo": codigo, "serie": serie,
+            "ui": ft.Column([
+                ft.Text(f"Activo {index}", size=15, weight=ft.FontWeight.BOLD),
+                equipo, marca, modelo, codigo, serie,
+                ft.Divider()
+            ])
+        }
 
-    def toggle_a2(e):
-        activo2_fields.visible = a2_check.value
-        page.update()
+    def add_device(e):
+        if len(device_forms) < 10:
+            idx = len(device_forms) + 1
+            new_form = create_device_form(idx)
+            device_forms.append(new_form)
+            devices_list_col.controls.append(new_form["ui"])
+            if len(device_forms) >= 10:
+                add_btn.disabled = True
+            page.update()
 
-    a2_check = ft.Checkbox(label="Agregar segundo activo", value=False, on_change=toggle_a2)
+    # Agregar el primer equipo por defecto
+    first_form = create_device_form(1)
+    device_forms.append(first_form)
+    devices_list_col.controls.append(first_form["ui"])
+
+    add_btn = ft.ElevatedButton("Agregar equipo (+)", icon=ft.Icons.ADD, on_click=add_device)
+
     ticket = ft.TextField(label="# Ticket")
     observaciones = ft.TextField(label="Observaciones", multiline=True, min_lines=2)
 
@@ -35,22 +58,28 @@ def build_entrega_form(page: ft.Page, service: ActaService) -> ft.Column:
     fila_nombre = ft.Row([nombre, search_btn])
 
     def generar(e):
-        data = DatosActa(
-            nombre=clean_up_text(nombre.value),
-            cedula=clean_up_text(cedula.value),
-            fecha=clean_up_text(fecha.value),
-            equipo=clean_up_text(equipo.value),
-            marca=clean_up_text(marca.value),
-            modelo=clean_up_text(modelo.value),
-            codigo=clean_up_text(codigo.value),
-            ticket=clean_up_text(ticket.value),
-            observaciones=clean_up_text(observaciones.value),
+        devices = []
+        for df in device_forms:
+            d_type = clean_up_text(df["equipo"].value)
+            brand = clean_up_text(df["marca"].value)
+            model = clean_up_text(df["modelo"].value)
+            udla = clean_up_text(df["codigo"].value)
+            serial = clean_up_text(df["serie"].value)
+            if d_type or brand or model or udla or serial:
+                devices.append(Device(
+                    device_type=d_type,
+                    brand=brand,
+                    model=model,
+                    udla_code=udla,
+                    serial_number=serial
+                ))
+        
+        data = TransactionRecord(
+            person=Person(name=clean_up_text(nombre.value), ci_document=clean_up_text(cedula.value)),
+            devices=devices,
+            ticket=TicketRecord(ticket=clean_up_text(ticket.value), observations=clean_up_text(observaciones.value)),
+            date=clean_up_text(fecha.value),
         )
-        if a2_check.value:
-            data.equipo2 = clean_up_text(equipo2.value)
-            data.marca2 = clean_up_text(marca2.value)
-            data.modelo2 = clean_up_text(modelo2.value)
-            data.codigo2 = clean_up_text(codigo2.value)
             
         success, msg = service.generate_entrega(data)
         show_popup_message(page, msg)
@@ -58,9 +87,8 @@ def build_entrega_form(page: ft.Page, service: ActaService) -> ft.Column:
     return ft.Column([
         fila_nombre, cedula, fila_fecha, cal_box,
         ft.Divider(),
-        ft.Text("Activo 1", size=15, weight=ft.FontWeight.BOLD),
-        equipo, marca, modelo, codigo,
-        a2_check, activo2_fields,
+        devices_list_col,
+        add_btn,
         ft.Divider(),
         ticket, observaciones,
         ft.Container(height=8),

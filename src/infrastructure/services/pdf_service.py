@@ -7,7 +7,7 @@ import platform
 from typing import Optional
 
 from src.core.constants import TEMPLATE_PATH, TEMPLATE_RESPALDO_PATH, TEMPLATE_DEVOLUCION_PATH, MESES
-from src.domain.models import DatosActa
+from src.domain.models import TransactionRecord
 from src.infrastructure.services.file_system import FileSystemService
 
 class DocumentService:
@@ -26,18 +26,18 @@ class DocumentService:
             paragraph.add_run(text)
 
     @staticmethod
-    def generate_acta_entrega(data: DatosActa) -> Optional[str]:
+    def generate_acta_entrega(data: TransactionRecord) -> Optional[str]:
         """Genera un PDF rellenando la plantilla DOCX 'ACTA ENTREGA.docx'."""
         try:
             doc = Document(TEMPLATE_PATH)
 
             # --- Párrafo 1: Declaración ---
             p1 = doc.paragraphs[1]
-            p1.runs[2].text = data.nombre + " "
-            p1.runs[5].text = " " + data.cedula + " "
+            p1.runs[2].text = data.person.name + " "
+            p1.runs[5].text = " " + data.person.ci_document + " "
 
             # --- Párrafo 15: Fecha ---
-            partes_fecha = data.fecha.split("/")
+            partes_fecha = data.date.split("/")
             if len(partes_fecha) == 3:
                 dia, mes_num, anio = partes_fecha
                 p15 = doc.paragraphs[15]
@@ -45,29 +45,61 @@ class DocumentService:
                 p15.runs[3].text = MESES.get(int(mes_num), "___")
                 p15.runs[5].text = anio
 
+            # --- Extract device info ---
+            def get_field(attr, deduplicate=False):
+                vals = [getattr(d, attr) for d in data.devices if getattr(d, attr)]
+                if not vals:
+                    return ""
+                if deduplicate:
+                    unique_vals = []
+                    for v in vals:
+                        if v not in unique_vals:
+                            unique_vals.append(v)
+                    return "\n".join(unique_vals)
+                else:
+                    return "\n".join(vals)
+
+            tipos = get_field('device_type', deduplicate=True)
+            marcas = get_field('brand', deduplicate=True)
+            modelos = get_field('model', deduplicate=False)
+            
+            codigos_list = []
+            for d in data.devices:
+                c = d.udla_code or ""
+                s = d.serial_number or ""
+                if c and s:
+                    codigos_list.append(f"{c} (S/N: {s})")
+                elif c:
+                    codigos_list.append(c)
+                elif s:
+                    codigos_list.append(f"S/N: {s}")
+                else:
+                    codigos_list.append("-")
+            codigos_str = "\n".join(codigos_list)
+
             # --- Tabla 0: Bienes entregados ---
             t0 = doc.tables[0]
-            DocumentService._set_cell_text(t0.rows[0].cells[1], data.equipo)
-            DocumentService._set_cell_text(t0.rows[1].cells[1], data.marca)
-            DocumentService._set_cell_text(t0.rows[2].cells[1], data.modelo)
-            DocumentService._set_cell_text(t0.rows[3].cells[1], data.codigo)
+            DocumentService._set_cell_text(t0.rows[0].cells[1], tipos)
+            DocumentService._set_cell_text(t0.rows[1].cells[1], marcas)
+            DocumentService._set_cell_text(t0.rows[2].cells[1], modelos)
+            DocumentService._set_cell_text(t0.rows[3].cells[1], codigos_str)
 
-            DocumentService._set_cell_text(t0.rows[0].cells[2], data.equipo2)
-            DocumentService._set_cell_text(t0.rows[1].cells[2], data.marca2)
-            DocumentService._set_cell_text(t0.rows[2].cells[2], data.modelo2)
-            DocumentService._set_cell_text(t0.rows[3].cells[2], data.codigo2)
+            DocumentService._set_cell_text(t0.rows[0].cells[2], "")
+            DocumentService._set_cell_text(t0.rows[1].cells[2], "")
+            DocumentService._set_cell_text(t0.rows[2].cells[2], "")
+            DocumentService._set_cell_text(t0.rows[3].cells[2], "")
 
-            DocumentService._set_cell_text(t0.rows[4].cells[1], data.ticket)
-            DocumentService._set_cell_text(t0.rows[5].cells[1], data.fecha)
-            DocumentService._set_cell_text(t0.rows[6].cells[1], data.observaciones)
+            DocumentService._set_cell_text(t0.rows[4].cells[1], data.ticket.ticket)
+            DocumentService._set_cell_text(t0.rows[5].cells[1], data.date)
+            DocumentService._set_cell_text(t0.rows[6].cells[1], data.ticket.observations)
 
             # --- Tabla 1: Firma ---
             t1 = doc.tables[1]
-            DocumentService._set_cell_text(t1.rows[1].cells[1], data.nombre)
-            DocumentService._set_cell_text(t1.rows[2].cells[1], data.cedula)
+            DocumentService._set_cell_text(t1.rows[1].cells[1], data.person.name)
+            DocumentService._set_cell_text(t1.rows[2].cells[1], data.person.ci_document)
 
             # --- Guardar ---
-            nombre_archivo = "".join(c for c in f"ACTA ENTREGA {data.nombre}" if c not in r'\/:*?"<>|')
+            nombre_archivo = "".join(c for c in f"ACTA ENTREGA {data.person.name}" if c not in r'\/:*?"<>|')
             route = FileSystemService.get_records_path("ACTAS DE ENTREGA")
             if not route:
                 raise Exception("Could not create output directory")
@@ -88,12 +120,12 @@ class DocumentService:
             raise
 
     @staticmethod
-    def generate_acta_respaldo(data: DatosActa) -> Optional[str]:
+    def generate_acta_respaldo(data: TransactionRecord) -> Optional[str]:
         """Genera un PDF rellenando la plantilla de respaldo."""
         try:
             doc = Document(TEMPLATE_RESPALDO_PATH)
 
-            partes_fecha = data.fecha.split("/")
+            partes_fecha = data.date.split("/")
             if len(partes_fecha) == 3:
                 dia, mes, anio = partes_fecha
                 p4 = doc.paragraphs[4]
@@ -103,18 +135,18 @@ class DocumentService:
                 p4.runs[8].text = ""
 
             p7 = doc.paragraphs[7]
-            p7.runs[3].text = data.nombre + " "
+            p7.runs[3].text = data.person.name + " "
 
             p11 = doc.paragraphs[11]
-            p11.runs[2].text = data.nombre
-            p11.runs[4].text = data.motivo or "realizar un cambio y/o formateo del equipo"
+            p11.runs[2].text = data.person.name
+            p11.runs[4].text = data.reason or "realizar un cambio y/o formateo del equipo"
             p11.runs[5].text = ""
             p11.runs[6].text = "."
 
             p18 = doc.paragraphs[18]
-            p18.runs[2].text = data.nombre
+            p18.runs[2].text = data.person.name
 
-            nombre_archivo = "".join(c for c in f"ACTA RESPALDO {data.nombre}" if c not in r'\/:*?"<>|')
+            nombre_archivo = "".join(c for c in f"ACTA RESPALDO {data.person.name}" if c not in r'\/:*?"<>|')
             route = FileSystemService.get_records_path("ACTAS DE RESPALDO")
             if not route:
                 raise Exception("Could not create output directory")
@@ -135,10 +167,10 @@ class DocumentService:
             raise
 
     @staticmethod
-    def generate_acta_devolucion(data: DatosActa) -> Optional[str]:
+    def generate_acta_devolucion(data: TransactionRecord) -> Optional[str]:
         """Genera el Excel de devolución y lo devuelve (la ruta)."""
         try:
-            nombre_archivo = "".join(c for c in f"ACTA DEVOLUCION {data.nombre}" if c not in r'\/:*?"<>|')
+            nombre_archivo = "".join(c for c in f"ACTA DEVOLUCION {data.person.name}" if c not in r'\/:*?"<>|')
             route = FileSystemService.get_records_path("ACTAS DE DEVOLUCION")
             if not route:
                 raise Exception("Could not create output directory")

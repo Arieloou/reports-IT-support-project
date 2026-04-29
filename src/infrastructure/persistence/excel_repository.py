@@ -2,7 +2,7 @@ import os
 from openpyxl import Workbook, load_workbook
 from src.core.utils import standardize_name
 from src.core.constants import DATA_FILE_PATH
-from src.domain.models import Person, NewPersonRecord, TransactionRecord
+from src.domain.models import Person, TransactionRecord
 from typing import List
 
 class ExcelRepository:
@@ -34,7 +34,7 @@ class ExcelRepository:
                 palabras_fila = standardize_name(str(fila[0]))
 
                 if set(palabras_buscar).issubset(palabras_fila):
-                    possible_matches.append(Person(nombre=str(fila[0]), cedula=str(fila[1])))
+                    possible_matches.append(Person(name=str(fila[0]), ci_document=str(fila[1])))
             
             wb.close()
             return possible_matches
@@ -42,7 +42,7 @@ class ExcelRepository:
             print(f"Error reading Excel for search: {e}")
             return []
 
-    def save_acta_record(self, data: TransactionRecord) -> bool:
+    def save_transaction_record(self, data: TransactionRecord) -> bool:
         """Guarda el registro de un acta generada en el Excel."""
         try:
             if os.path.exists(self.file_path):
@@ -52,64 +52,49 @@ class ExcelRepository:
                 wb = Workbook()
                 ws = wb["REGISTROS"]
                 ws.append([
-                    "NOMBRE", "CEDULA", "Fecha",
-                    "Equipo", "Marca", "Modelo", "Codigo",
-                    "Equipo 2", "Marca 2", "Modelo 2", "Codigo 2",
-                    "Ticket", "Observaciones"
+                    "NOMBRE", "CEDULA", "FECHA",
+                    "EQUIPO", "MARCA", "MODELO", "CODIGO", "SERIE",
+                    "TICKET", "OBSERVACIONES"
                 ])
 
-            ws.append([
-                data.nombre,
-                data.cedula,
-                data.fecha,
-                data.equipo,
-                data.marca,
-                data.modelo,
-                data.codigo,
-                data.equipo2,
-                data.marca2,
-                data.modelo2,
-                data.codigo2,
-                data.ticket,
-                data.observaciones,
-            ])
+            for device in data.devices:
+                ws.append([
+                    data.person.name,
+                    data.person.ci_document,
+                    data.date,
+                    device.device_type,
+                    device.brand,
+                    device.model,
+                    device.udla_code,
+                    device.serial_number,
+                    data.ticket.ticket,
+                    data.ticket.observations,
+                ])
+            
             wb.save(self.file_path)
             return True
         except Exception as e:
             print(f"Error saving to Excel: {e}")
             return False
 
-    def save_acta_record(self, data: NewPersonRecord) -> bool:
-        """Guarda el registro de un acta generada en el Excel."""
+    def save_new_person(self, data: Person) -> bool:
+        """Guarda el registro de una nueva persona en el Excel."""
         try:
             if os.path.exists(self.file_path):
                 wb = load_workbook(self.file_path)
-                ws = wb["REGISTROS"]
+                ws = wb["PERSONAS"]
             else:
                 wb = Workbook()
-                ws = wb["REGISTROS"]
+                ws = wb["PERSONAS"]
                 ws.append([
-                    "NOMBRE", "CEDULA", "Fecha",
-                    "Equipo", "Marca", "Modelo", "Codigo",
-                    "Equipo 2", "Marca 2", "Modelo 2", "Codigo 2",
-                    "Ticket", "Observaciones"
+                    "NOMBRE", "CEDULA"
                 ])
 
             ws.append([
-                data.nombre,
-                data.cedula,
-                data.fecha,
-                data.equipo,
-                data.marca,
-                data.modelo,
-                data.codigo,
-                data.equipo2,
-                data.marca2,
-                data.modelo2,
-                data.codigo2,
-                data.ticket,
-                data.observaciones,
+                data.name,
+                data.ci_document,
             ])
+
             wb.save(self.file_path)
             return True
         except Exception as e:
