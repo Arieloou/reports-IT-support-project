@@ -2,59 +2,61 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
-class TipoActa(Enum):
+class ActaType(Enum):
     ENTREGA = "ENTREGA"
     RESPALDO = "RESPALDO"
     DEVOLUCION = "DEVOLUCION"
 
 @dataclass
-class Persona:
+class Person:
     nombre: str
     cedula: str
 
 @dataclass
-class Equipo:
-    equipo: str = ""
-    marca: str = ""
-    modelo: str = ""
-    codigo: str = ""
+class Device:
+    device_type: str = ""
+    brand: str = ""
+    model: str = ""
+    udla_code: str = ""
+    serial_number: str = ""
 
 @dataclass
-class DatosActa:
+class TransactionRecord:
+    device: str = ""
+    brand: str = ""
+    model: str = ""
+    udla_code: str = ""
+    serial_number: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "device": self.device,
+            "brand": self.brand,
+            "model": self.model,
+            "udla_code": self.udla_code,
+            "serial_number": self.serial_number,
+        }
+
+@dataclass
+class TicketRecord:
+    ticket: str = ""
+    observations: str = ""
+
+    def to_dict(self) -> dict:
+        return {
+            "ticket": self.ticket,
+            "observations": self.observations,
+        }
+
+
+@dataclass
+class NewPersonRecord:
     nombre: str
     fecha: str
     cedula: str = ""
-    
-    # Activo 1
-    equipo: str = ""
-    marca: str = ""
-    modelo: str = ""
-    codigo: str = ""
-    
-    # Activo 2
-    equipo2: str = ""
-    marca2: str = ""
-    modelo2: str = ""
-    codigo2: str = ""
-    
-    ticket: str = ""
-    observaciones: str = ""
-    motivo: str = "realizar un cambio y/o formateo del equipo" # Default para respaldo
     
     def to_dict(self) -> dict:
         return {
             "nombre": self.nombre,
             "cedula": self.cedula,
-            "fecha": self.fecha,
-            "equipo": self.equipo,
-            "marca": self.marca,
-            "modelo": self.modelo,
-            "codigo": self.codigo,
-            "equipo2": self.equipo2,
-            "marca2": self.marca2,
-            "modelo2": self.modelo2,
-            "codigo2": self.codigo2,
-            "ticket": self.ticket,
-            "observaciones": self.observaciones,
-            "motivo": self.motivo
         }
