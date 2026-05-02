@@ -12,6 +12,7 @@ class ExcelRepository:
     def get_personas_by_name(self, nombre_buscar: str) -> List[Person]:
         """Busca personas por nombre en el archivo de Excel."""
         if not os.path.exists(self.file_path):
+            print(f"The file doesn't exist or the route is wrong: {self.file_path}")
             return []
 
         try:

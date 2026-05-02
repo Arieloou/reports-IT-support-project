@@ -4,7 +4,8 @@ TEMPLATE_PATH = os.path.join("Report Templates", "ACTA ENTREGA.docx")
 TEMPLATE_RESPALDO_PATH = os.path.join("Report Templates", "ACTA RESPALDO DE LA INFORMACIÓN DIGITAL.docx")
 TEMPLATE_DEVOLUCION_PATH = os.path.join("Report Templates", "ACTA DEVOLUCIÓN.xlsx")
 CONFIG_PATH = "config.json"
-DATA_FILE_PATH = "DATA.xlsx"
+# DATA_FILE_PATH = "DATA.xlsx"
+DATA_FILE_PATH = "//snfile01/Publico/Ariel/DATA.xlsx"
 
 RECORD_FOLDERS = ["ACTAS DE ENTREGA", "ACTAS DE RESPALDO", "ACTAS DE DEVOLUCION"]
 
