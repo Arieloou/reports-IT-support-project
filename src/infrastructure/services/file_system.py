@@ -59,21 +59,25 @@ class FileSystemService:
         records = []
         for folder_name in RECORD_FOLDERS:
             folder = FileSystemService.get_records_path(folder_name)
-            if folder and os.path.exists(folder):
-                for f in os.listdir(folder):
-                    if f.lower().endswith((".pdf", ".xlsx")) and not f.startswith("~$"):
-                        full_path = os.path.join(folder, f)
-                        try:
-                            mod_time = os.path.getmtime(full_path)
-                            mod_date = datetime.fromtimestamp(mod_time)
-                            records.append({
-                                "nombre": f,
-                                "ruta": str(full_path),
-                                "fecha": mod_date.strftime("%d/%m/%Y %H:%M"),
-                                "tipo": folder_name,
-                            })
-                        except Exception as e:
-                            print(f"Error reading metadata for {f}: {e}")
+            if not folder or not os.path.exists(folder):
+                continue
+
+            for f in os.listdir(folder):
+                if not f.lower().endswith((".pdf", ".xlsx")) or f.startswith("~$"):
+                    continue
+
+                full_path = os.path.join(folder, f)
+                try:
+                    mod_time = os.path.getmtime(full_path)
+                    mod_date = datetime.fromtimestamp(mod_time)
+                    records.append({
+                        "nombre": f,
+                        "ruta": str(full_path),
+                        "fecha": mod_date.strftime("%d/%m/%Y %H:%M"),
+                        "tipo": folder_name,
+                    })
+                except Exception as e:
+                    print(f"Error reading metadata for {f}: {e}")
                             
         records.sort(key=lambda x: os.path.getmtime(x["ruta"]), reverse=True)
         return records

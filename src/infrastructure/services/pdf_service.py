@@ -26,6 +26,20 @@ class DocumentService:
             paragraph.add_run(text)
 
     @staticmethod
+    def __get_field(attr, data, deduplicate=False):
+        vals = [getattr(d, attr) for d in data.devices if getattr(d, attr)]
+        if not vals:
+            return ""
+        if deduplicate:
+            unique_vals = []
+            for v in vals:
+                if v not in unique_vals:
+                    unique_vals.append(v)
+            return "\n".join(unique_vals)
+        else:
+            return "\n".join(vals)
+
+    @staticmethod
     def generate_acta_entrega(data: TransactionRecord) -> Optional[str]:
         """Genera un PDF rellenando la plantilla DOCX 'ACTA ENTREGA.docx'."""
         try:
@@ -46,27 +60,14 @@ class DocumentService:
                 p15.runs[5].text = anio
 
             # --- Extract device info ---
-            def get_field(attr, deduplicate=False):
-                vals = [getattr(d, attr) for d in data.devices if getattr(d, attr)]
-                if not vals:
-                    return ""
-                if deduplicate:
-                    unique_vals = []
-                    for v in vals:
-                        if v not in unique_vals:
-                            unique_vals.append(v)
-                    return "\n".join(unique_vals)
-                else:
-                    return "\n".join(vals)
-
-            tipos = get_field('device_type', deduplicate=True)
-            marcas = get_field('brand', deduplicate=True)
-            modelos = get_field('model', deduplicate=False)
+            tipos = DocumentService.__get_field('device_type', data, deduplicate=True)
+            marcas = DocumentService.__get_field('brand', data, deduplicate=True)
+            modelos = DocumentService.__get_field('model', data, deduplicate=False)
             
             codigos_list = []
             for d in data.devices:
-                c = d.udla_code or ""
-                s = d.serial_number or ""
+                c = d.udla_code
+                s = d.serial_number
                 if c and s:
                     codigos_list.append(f"{c} (S/N: {s})")
                 elif c:
